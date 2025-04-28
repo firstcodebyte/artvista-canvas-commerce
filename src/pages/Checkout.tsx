@@ -9,7 +9,7 @@ import { IndianRupee } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { formatPrice } from '@/utils/formatPrice';
-import { initiatePayment, generateOrderId, PaymentDetails } from '@/services/paymentService';
+import { initiatePayment, generateOrderId, PaymentDetails, OrderItem } from '@/services/paymentService';
 import {
   Form,
   FormControl,
@@ -36,7 +36,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
-// Form schema
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -75,7 +74,6 @@ const Checkout = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Initialize form with user data if available
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -90,7 +88,6 @@ const Checkout = () => {
     },
   });
 
-  // Handle form submission
   const onSubmit = async (data: FormValues) => {
     if (items.length === 0) {
       toast({
@@ -127,7 +124,7 @@ const Checkout = () => {
             title: item.title,
             price: item.price,
             quantity: item.quantity
-          })),
+          })) as OrderItem[],
           customerName: data.name,
           customerEmail: data.email,
           customerPhone: data.phone
@@ -144,7 +141,6 @@ const Checkout = () => {
           });
         }
       } else {
-        // Cash on Delivery
         setTimeout(() => {
           setIsProcessing(false);
           processSuccessfulOrder('COD');
@@ -161,7 +157,6 @@ const Checkout = () => {
     }
   };
 
-  // Process successful order
   const processSuccessfulOrder = (paymentMethod: string) => {
     const orderId = Math.random().toString(36).substr(2, 9).toUpperCase();
     
@@ -174,7 +169,6 @@ const Checkout = () => {
     navigate('/user-dashboard');
   };
 
-  // If cart is empty, redirect to gallery
   if (items.length === 0) {
     return (
       <div className="section-container text-center py-12">
@@ -192,7 +186,6 @@ const Checkout = () => {
       <h1 className="text-3xl font-serif font-bold text-gray-900 mb-8">Checkout</h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Checkout Form */}
         <div className="lg:col-span-2">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -404,7 +397,6 @@ const Checkout = () => {
           </Form>
         </div>
         
-        {/* Order Summary */}
         <div className="lg:col-span-1">
           <Card>
             <CardHeader>
@@ -414,7 +406,6 @@ const Checkout = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Cart Items */}
               <div className="space-y-3">
                 {items.map((item) => (
                   <div key={item.id} className="flex items-center space-x-3">
@@ -434,7 +425,6 @@ const Checkout = () => {
                 ))}
               </div>
               
-              {/* Price Details */}
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Subtotal</span>

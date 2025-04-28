@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { loadRazorpayScript, RAZORPAY_KEY_ID, RazorpayOptions, RazorpayResponse } from '@/utils/razorpay';
 import { toast } from '@/components/ui/use-toast';
 import { Tables } from '@/integrations/supabase/types';
+import { Json } from '@/integrations/supabase/types';
 
 interface CreateOrderParams {
   amount: number;
@@ -10,7 +11,7 @@ interface CreateOrderParams {
   receipt: string;
 }
 
-interface OrderItem {
+export interface OrderItem {
   id: string;
   title: string;
   price: number;
@@ -41,18 +42,23 @@ export const initiatePayment = async (paymentDetails: PaymentDetails): Promise<b
       return false;
     }
 
+    // Get user ID if authenticated
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id;
+    
     // Create order in your database
     const { data: order, error } = await supabase
       .from('orders')
       .insert({
         order_id: paymentDetails.orderId,
+        user_id: userId,
         amount: paymentDetails.amount,
         currency: paymentDetails.currency,
         status: 'created',
         customer_name: paymentDetails.customerName,
         customer_email: paymentDetails.customerEmail,
         customer_phone: paymentDetails.customerPhone,
-        items: paymentDetails.items
+        items: paymentDetails.items as unknown as Json
       })
       .select()
       .single();

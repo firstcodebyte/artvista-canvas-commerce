@@ -13,6 +13,7 @@ import { getUserOrderHistory } from '@/services/paymentService';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { Tables } from '@/integrations/supabase/types';
+import { Json } from '@/integrations/supabase/types';
 
 // Sample wishlist data
 const wishlist = [
@@ -34,6 +35,14 @@ const wishlist = [
   },
 ];
 
+interface OrderItem {
+  id: string;
+  title: string;
+  artistName: string;
+  price: number;
+  image: string;
+}
+
 interface Order {
   id: string;
   order_id: string;
@@ -41,13 +50,19 @@ interface Order {
   status: 'created' | 'paid' | 'failed' | 'refunded';
   created_at: string;
   updated_at: string;
-  items: Array<{
-    id: string;
-    title: string;
-    artistName: string;
-    price: number;
-    image: string;
-  }>;
+  items: OrderItem[];
+  user_id?: string;
+  payment_id?: string;
+  payment_signature?: string;
+  error_code?: string;
+  error_description?: string;
+  error_source?: string;
+  error_step?: string;
+  error_reason?: string;
+  customer_name: string;
+  customer_email: string;
+  customer_phone?: string;
+  currency: string;
 }
 
 const UserDashboard = () => {
@@ -83,7 +98,15 @@ const UserDashboard = () => {
           
           if (error) throw error;
           
-          setOrders(data || []);
+          const transformedOrders = data?.map(order => {
+            return {
+              ...order,
+              status: order.status as 'created' | 'paid' | 'failed' | 'refunded',
+              items: order.items as unknown as OrderItem[]
+            };
+          }) || [];
+          
+          setOrders(transformedOrders);
           if (count) {
             setTotalPages(Math.ceil(count / pageSize));
           }
@@ -94,7 +117,6 @@ const UserDashboard = () => {
             description: "There was an error loading your orders. Please try again.",
             variant: "destructive"
           });
-          // For demo purposes, we'll use the sample orders
           setOrders([
             {
               id: '1',
@@ -207,7 +229,6 @@ const UserDashboard = () => {
               </CardHeader>
               <CardContent>
                 {isLoading ? (
-                  // Loading skeleton
                   <div className="space-y-4">
                     {[1, 2].map((i) => (
                       <div key={i} className="border rounded-lg p-4">
