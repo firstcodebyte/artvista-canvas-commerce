@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -125,6 +126,9 @@ const UserDashboard = () => {
               status: 'paid',
               created_at: '2023-05-20T00:00:00Z',
               updated_at: '2023-05-20T00:00:00Z',
+              customer_name: 'Test User',
+              customer_email: 'test@example.com',
+              currency: 'INR',
               items: [
                 {
                   id: '1',
@@ -142,6 +146,9 @@ const UserDashboard = () => {
               status: 'created',
               created_at: '2023-04-15T00:00:00Z',
               updated_at: '2023-04-15T00:00:00Z',
+              customer_name: 'Test User',
+              customer_email: 'test@example.com',
+              currency: 'INR',
               items: [
                 {
                   id: '2',
