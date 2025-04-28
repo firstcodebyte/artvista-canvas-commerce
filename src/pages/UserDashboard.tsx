@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { getUserOrderHistory } from '@/services/paymentService';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Tables } from '@/integrations/supabase/types';
 
 // Sample wishlist data
 const wishlist = [
@@ -74,8 +74,6 @@ const UserDashboard = () => {
       if (activeTab === 'orders' && user?.id) {
         setIsLoading(true);
         try {
-          // In a real implementation, we'd use real user ID and pagination
-          // This is a placeholder for demonstration
           const { data, error, count } = await supabase
             .from('orders')
             .select('*', { count: 'exact' })

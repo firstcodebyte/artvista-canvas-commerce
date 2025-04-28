@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,6 +9,7 @@ import { IndianRupee } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { formatPrice } from '@/utils/formatPrice';
+import { initiatePayment, generateOrderId, PaymentDetails } from '@/services/paymentService';
 import {
   Form,
   FormControl,
@@ -102,57 +102,63 @@ const Checkout = () => {
       return;
     }
 
+    if (!isAuthenticated) {
+      toast({
+        title: 'Login Required',
+        description: 'Please login to continue with checkout.',
+        variant: 'destructive',
+      });
+      navigate('/login');
+      return;
+    }
+
     setIsProcessing(true);
 
-    if (data.paymentMethod === 'razorpay') {
-      // Simulate Razorpay integration
-      setTimeout(() => {
-        simulateRazorpayPayment(data);
-      }, 1000);
-    } else {
-      // Cash on Delivery
-      setTimeout(() => {
-        setIsProcessing(false);
-        processSuccessfulOrder('COD');
-      }, 1000);
-    }
-  };
-
-  // Simulate Razorpay payment
-  const simulateRazorpayPayment = (data: FormValues) => {
-    // This is a simulation of Razorpay - in a real implementation,
-    // you would initialize the Razorpay SDK with actual credentials
-    const options = {
-      key: 'rzp_test_YOUR_KEY_ID', // Replace with actual Razorpay key in production
-      amount: totalAmount * 100, // Amount in paisa
-      currency: 'INR',
-      name: 'ArtVista',
-      description: 'Purchase of Artwork',
-      image: 'https://your-logo-url.png',
-      handler: function () {
-        setIsProcessing(false);
-        processSuccessfulOrder('Razorpay');
-      },
-      prefill: {
-        name: data.name,
-        email: data.email,
-        contact: data.phone,
-      },
-      theme: {
-        color: '#9b87f5',
-      },
-    };
-
-    // Since we can't actually initialize Razorpay in this demo,
-    // we'll simulate a successful payment
-    setTimeout(() => {
+    try {
+      if (data.paymentMethod === 'razorpay') {
+        const orderId = generateOrderId();
+        
+        const paymentDetails: PaymentDetails = {
+          orderId,
+          amount: totalAmount,
+          currency: 'INR',
+          items: items.map(item => ({
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            quantity: item.quantity
+          })),
+          customerName: data.name,
+          customerEmail: data.email,
+          customerPhone: data.phone
+        };
+        
+        const result = await initiatePayment(paymentDetails);
+        
+        if (!result) {
+          setIsProcessing(false);
+          toast({
+            title: 'Payment Initialization Failed',
+            description: 'There was an issue setting up the payment. Please try again.',
+            variant: 'destructive',
+          });
+        }
+      } else {
+        // Cash on Delivery
+        setTimeout(() => {
+          setIsProcessing(false);
+          processSuccessfulOrder('COD');
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
       setIsProcessing(false);
-      processSuccessfulOrder('Razorpay');
-    }, 1000);
-
-    // In a real implementation, you would do:
-    // const rzp = new window.Razorpay(options);
-    // rzp.open();
+      toast({
+        title: 'Checkout Failed',
+        description: 'There was an error processing your checkout. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   // Process successful order
@@ -165,7 +171,7 @@ const Checkout = () => {
     });
     
     clearCart();
-    navigate('/');
+    navigate('/user-dashboard');
   };
 
   // If cart is empty, redirect to gallery

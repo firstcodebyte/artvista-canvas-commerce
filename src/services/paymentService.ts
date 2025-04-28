@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { loadRazorpayScript, RAZORPAY_KEY_ID, RazorpayOptions, RazorpayResponse } from '@/utils/razorpay';
 import { toast } from '@/components/ui/use-toast';
+import { Tables } from '@/integrations/supabase/types';
 
 interface CreateOrderParams {
   amount: number;
@@ -75,7 +76,9 @@ export const initiatePayment = async (paymentDetails: PaymentDetails): Promise<b
       description: `Purchase of artwork(s)`,
       order_id: paymentDetails.orderId,
       handler: function(response: RazorpayResponse) {
-        handlePaymentSuccess(response, order.id);
+        if (order) {
+          handlePaymentSuccess(response, order.id);
+        }
       },
       prefill: {
         name: paymentDetails.customerName,
@@ -91,7 +94,9 @@ export const initiatePayment = async (paymentDetails: PaymentDetails): Promise<b
     const razorpay = new window.Razorpay(options);
     
     razorpay.on('payment.failed', function (response: any) {
-      handlePaymentFailure(response, order.id);
+      if (order) {
+        handlePaymentFailure(response, order.id);
+      }
     });
     
     razorpay.open();

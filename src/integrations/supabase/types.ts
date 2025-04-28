@@ -9,7 +9,72 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      orders: {
+        Row: {
+          amount: number
+          created_at: string | null
+          currency: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string | null
+          error_code: string | null
+          error_description: string | null
+          error_reason: string | null
+          error_source: string | null
+          error_step: string | null
+          id: string
+          items: Json
+          order_id: string
+          payment_id: string | null
+          payment_signature: string | null
+          status: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          currency?: string
+          customer_email: string
+          customer_name: string
+          customer_phone?: string | null
+          error_code?: string | null
+          error_description?: string | null
+          error_reason?: string | null
+          error_source?: string | null
+          error_step?: string | null
+          id?: string
+          items: Json
+          order_id: string
+          payment_id?: string | null
+          payment_signature?: string | null
+          status: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          currency?: string
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string | null
+          error_code?: string | null
+          error_description?: string | null
+          error_reason?: string | null
+          error_source?: string | null
+          error_step?: string | null
+          id?: string
+          items?: Json
+          order_id?: string
+          payment_id?: string | null
+          payment_signature?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
