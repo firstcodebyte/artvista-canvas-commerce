@@ -8,7 +8,8 @@ import {
   LogIn,
   Menu,
   X,
-  Search
+  Search,
+  MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from '@/components/ui/input';
+import ContactDialog from './ContactDialog';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -78,6 +80,8 @@ const Navbar = () => {
 
         {/* Desktop Action Buttons */}
         <div className="hidden md:flex items-center space-x-4">
+          <ContactDialog />
+          
           <Link to="/cart" className="relative">
             <Button variant="ghost" size="icon">
               <ShoppingCart className="h-5 w-5" />
@@ -186,6 +190,13 @@ const Navbar = () => {
           >
             Cart {itemCount > 0 && <Badge className="ml-2">{itemCount}</Badge>}
           </Link>
+          
+          <div 
+            className="px-4 py-2 hover:bg-gray-100 rounded-md"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            <ContactDialog isMobile={true} />
+          </div>
           
           {isAuthenticated ? (
             <>
