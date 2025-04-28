@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { Indian } from 'lucide-react';
+import { IndianRupee } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { formatPrice } from '@/utils/formatPrice';
@@ -372,7 +372,7 @@ const Checkout = () => {
                                 </p>
                               </div>
                               <div className="text-gray-400">
-                                <Indian className="h-6 w-6" />
+                                <IndianRupee className="h-6 w-6" />
                               </div>
                             </div>
                           </div>
