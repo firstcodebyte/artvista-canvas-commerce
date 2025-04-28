@@ -1,45 +1,18 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useAuth } from '@/context/AuthContext';
 import { formatPrice } from '@/utils/formatPrice';
-
-// Sample order data
-const orders = [
-  {
-    id: 'ORD123456',
-    date: '2023-05-20',
-    totalAmount: 15000,
-    status: 'Delivered',
-    items: [
-      {
-        id: '1',
-        title: 'Mystic Mountains',
-        artistName: 'Anika Sharma',
-        price: 15000,
-        image: 'https://images.unsplash.com/photo-1615729947596-a598e5de0ab3',
-      },
-    ],
-  },
-  {
-    id: 'ORD789012',
-    date: '2023-04-15',
-    totalAmount: 22000,
-    status: 'Processing',
-    items: [
-      {
-        id: '2',
-        title: 'Urban Symphony',
-        artistName: 'Raj Patel',
-        price: 22000,
-        image: 'https://images.unsplash.com/photo-1496307653780-42ee777d4833',
-      },
-    ],
-  },
-];
+import { useToast } from "@/components/ui/use-toast";
+import { getUserOrderHistory } from '@/services/paymentService';
+import { supabase } from '@/integrations/supabase/client';
+import { AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
 
 // Sample wishlist data
 const wishlist = [
@@ -61,16 +34,154 @@ const wishlist = [
   },
 ];
 
+interface Order {
+  id: string;
+  order_id: string;
+  amount: number;
+  status: 'created' | 'paid' | 'failed' | 'refunded';
+  created_at: string;
+  updated_at: string;
+  items: Array<{
+    id: string;
+    title: string;
+    artistName: string;
+    price: number;
+    image: string;
+  }>;
+}
+
 const UserDashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('orders');
+  const [isLoading, setIsLoading] = useState(true);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 3;
   
   // Redirect if not authenticated
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
     }
   }, [isAuthenticated, navigate]);
+  
+  // Fetch orders when tab is active
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (activeTab === 'orders' && user?.id) {
+        setIsLoading(true);
+        try {
+          // In a real implementation, we'd use real user ID and pagination
+          // This is a placeholder for demonstration
+          const { data, error, count } = await supabase
+            .from('orders')
+            .select('*', { count: 'exact' })
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .range((currentPage - 1) * pageSize, currentPage * pageSize - 1);
+          
+          if (error) throw error;
+          
+          setOrders(data || []);
+          if (count) {
+            setTotalPages(Math.ceil(count / pageSize));
+          }
+        } catch (error) {
+          console.error('Error fetching orders:', error);
+          toast({
+            title: "Failed to load orders",
+            description: "There was an error loading your orders. Please try again.",
+            variant: "destructive"
+          });
+          // For demo purposes, we'll use the sample orders
+          setOrders([
+            {
+              id: '1',
+              order_id: 'ORD123456',
+              amount: 15000,
+              status: 'paid',
+              created_at: '2023-05-20T00:00:00Z',
+              updated_at: '2023-05-20T00:00:00Z',
+              items: [
+                {
+                  id: '1',
+                  title: 'Mystic Mountains',
+                  artistName: 'Anika Sharma',
+                  price: 15000,
+                  image: 'https://images.unsplash.com/photo-1615729947596-a598e5de0ab3',
+                },
+              ],
+            },
+            {
+              id: '2',
+              order_id: 'ORD789012',
+              amount: 22000,
+              status: 'created',
+              created_at: '2023-04-15T00:00:00Z',
+              updated_at: '2023-04-15T00:00:00Z',
+              items: [
+                {
+                  id: '2',
+                  title: 'Urban Symphony',
+                  artistName: 'Raj Patel',
+                  price: 22000,
+                  image: 'https://images.unsplash.com/photo-1496307653780-42ee777d4833',
+                },
+              ],
+            },
+          ]);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    fetchOrders();
+  }, [activeTab, user?.id, currentPage, toast]);
+  
+  // Handle pagination
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+  
+  // Status badge component
+  const StatusBadge = ({ status }: { status: string }) => {
+    switch (status) {
+      case 'paid':
+        return (
+          <div className="flex items-center text-green-800 bg-green-100 px-2 py-1 rounded-full text-xs">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Completed
+          </div>
+        );
+      case 'created':
+        return (
+          <div className="flex items-center text-blue-800 bg-blue-100 px-2 py-1 rounded-full text-xs">
+            <Clock className="h-3 w-3 mr-1" />
+            Processing
+          </div>
+        );
+      case 'failed':
+        return (
+          <div className="flex items-center text-red-800 bg-red-100 px-2 py-1 rounded-full text-xs">
+            <XCircle className="h-3 w-3 mr-1" />
+            Failed
+          </div>
+        );
+      case 'refunded':
+        return (
+          <div className="flex items-center text-yellow-800 bg-yellow-100 px-2 py-1 rounded-full text-xs">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            Refunded
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
   
   if (!user) {
     return null;
@@ -81,7 +192,7 @@ const UserDashboard = () => {
       <h1 className="text-3xl font-serif font-bold text-gray-900 mb-2">My Account</h1>
       <p className="text-gray-600 mb-8">Welcome back, {user.name}!</p>
       
-      <Tabs defaultValue="orders" className="w-full">
+      <Tabs defaultValue="orders" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-3 mb-8">
           <TabsTrigger value="orders">My Orders</TabsTrigger>
           <TabsTrigger value="wishlist">Wishlist</TabsTrigger>
@@ -97,26 +208,47 @@ const UserDashboard = () => {
                 <CardDescription>View all your previous orders and their status.</CardDescription>
               </CardHeader>
               <CardContent>
-                {orders.length > 0 ? (
+                {isLoading ? (
+                  // Loading skeleton
+                  <div className="space-y-4">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="border rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <Skeleton className="h-4 w-32 mb-2" />
+                            <Skeleton className="h-3 w-24" />
+                          </div>
+                          <div className="text-right">
+                            <Skeleton className="h-4 w-20 mb-2" />
+                            <Skeleton className="h-3 w-16 rounded-full" />
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-4">
+                            <Skeleton className="w-16 h-16 rounded-md" />
+                            <div className="flex-1">
+                              <Skeleton className="h-4 w-32 mb-2" />
+                              <Skeleton className="h-3 w-24" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : orders.length > 0 ? (
                   <div className="space-y-4">
                     {orders.map((order) => (
                       <div key={order.id} className="border rounded-lg p-4">
                         <div className="flex justify-between items-start mb-4">
                           <div>
-                            <h3 className="font-medium">Order #{order.id}</h3>
+                            <h3 className="font-medium">Order #{order.order_id}</h3>
                             <p className="text-sm text-gray-500">
-                              Placed on {new Date(order.date).toLocaleDateString('en-IN')}
+                              Placed on {new Date(order.created_at).toLocaleDateString('en-IN')}
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-medium">{formatPrice(order.totalAmount)}</p>
-                            <span className={`inline-block text-xs px-2 py-1 rounded-full ${
-                              order.status === 'Delivered' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-blue-100 text-blue-800'
-                            }`}>
-                              {order.status}
-                            </span>
+                            <p className="font-medium">{formatPrice(order.amount)}</p>
+                            <StatusBadge status={order.status} />
                           </div>
                         </div>
                         
@@ -140,10 +272,43 @@ const UserDashboard = () => {
                         </div>
                         
                         <div className="mt-4 flex justify-end">
-                          <Button variant="outline" size="sm">View Details</Button>
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={`/order/${order.id}`}>View Details</a>
+                          </Button>
                         </div>
                       </div>
                     ))}
+                    
+                    {totalPages > 1 && (
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious 
+                              onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                              className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
+                          </PaginationItem>
+                          
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            <PaginationItem key={page}>
+                              <PaginationLink
+                                onClick={() => handlePageChange(page)}
+                                isActive={page === currentPage}
+                              >
+                                {page}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+                          
+                          <PaginationItem>
+                            <PaginationNext 
+                              onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                              className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8">
